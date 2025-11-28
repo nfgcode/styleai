@@ -1,6 +1,6 @@
-# styleai
+# Style-AI
 
-A new Flutter project.
+A new Flutter project
 
 ## Getting Started
 
