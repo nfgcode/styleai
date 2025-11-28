@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:styleai/service/database_service.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/global_variable.dart';
 
@@ -279,13 +278,6 @@ class _TryOnPageState extends State<TryOnPage> {
         strAnswer = resultText;
       });
 
-      // Save to Supabase
-      if (resultText.isNotEmpty) {
-        await DatabaseService().saveTryOnHistory(
-          analysisResult: resultText,
-          // imagePath: ... (If we implement storage upload later)
-        );
-      }
     } catch (e) {
       setState(() {
         strAnswer = 'Error: ${e.toString()}';

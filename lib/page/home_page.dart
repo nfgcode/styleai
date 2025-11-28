@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
-import 'package:styleai/service/database_service.dart';
-import 'package:styleai/auth/auth_service.dart';
 import 'auth/login_page.dart';
 import 'try_on_page.dart';
 import '../fragment/fragment_generate_text.dart';
@@ -282,6 +281,9 @@ class HomeContent extends StatelessWidget {
                     child: Image.network(
                       'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop',
                       height: 100,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.image_not_supported, size: 100, color: Colors.white54);
+                      },
                     ),
                   ),
                 ],
@@ -294,47 +296,63 @@ class HomeContent extends StatelessWidget {
   }
 
   Widget _buildArrivalCard(String title, String subtitle, String price, String imageUrl) {
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 15, bottom: 5),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-            child: Container(
-              height: 140,
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage(imageUrl),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: const Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: CircleAvatar(
-                    backgroundColor: Colors.white,
-                    radius: 14,
-                    child: Icon(Icons.favorite_border, size: 18, color: Colors.black),
-                  ),
-                ),
+    return GestureDetector(
+      onTap: () async {
+        final searchQuery = Uri.encodeComponent('$title $subtitle buy online');
+        final url = Uri.parse('https://www.google.com/search?q=$searchQuery');
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        width: 160,
+        margin: const EdgeInsets.only(right: 15, bottom: 5),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.1),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              child: Image.network(
+                imageUrl,
+                height: 140,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 140,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 140,
+                    color: Colors.grey[100],
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-          ),
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
@@ -360,6 +378,7 @@ class HomeContent extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -391,9 +410,8 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _databaseService = DatabaseService();
-  final _authService = AuthService();
-  Map<String, dynamic>? _profile;
+  String _userName = '';
+  String _userEmail = '';
   bool _isLoading = true;
 
   @override
@@ -403,17 +421,19 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadProfile() async {
-    final profile = await _databaseService.getUserProfile();
+    final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
-        _profile = profile;
+        _userName = prefs.getString('user_name') ?? 'User';
+        _userEmail = prefs.getString('user_email') ?? '';
         _isLoading = false;
       });
     }
   }
 
   Future<void> _signOut() async {
-    await _authService.signOut();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', false);
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -424,8 +444,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F9FF),
       appBar: AppBar(
@@ -452,73 +470,30 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Icon(Icons.person, size: 50, color: Colors.white),
                   ),
                   const SizedBox(height: 20),
-                  if (user != null) ...[
-                    Text(
-                      _profile?['full_name'] ?? 'User',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      user.email ?? '',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 40),
-                  // History Section
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Analysis History',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
+                  Text(
+                    _userName,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _databaseService.getTryOnHistory(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: Text('No history yet.'),
-                        );
-                      }
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: snapshot.data!.length,
-                        itemBuilder: (context, index) {
-                          final item = snapshot.data![index];
-                          final date = DateTime.parse(item['created_at']).toLocal();
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            child: ListTile(
-                              leading: const Icon(Icons.history),
-                              title: Text(
-                                item['analysis_result'] ?? '',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}',
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
+                  const SizedBox(height: 8),
+                  Text(
+                    _userEmail,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  // Info Section
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      leading: const Icon(Icons.style),
+                      title: const Text('StyleAI Fashion Assistant'),
+                      subtitle: const Text('Get personalized fashion advice'),
+                    ),
                   ),
                 ],
               ),

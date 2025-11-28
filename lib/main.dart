@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'l10n/app_localizations.dart';
 import 'page/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  await Supabase.initialize(
-    url: 'https://gufwvrmvlqoizyllmujd.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1Znd2cm12bHFvaXp5bGxtdWpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4OTYyNDUsImV4cCI6MjA3OTQ3MjI0NX0.HdZgZfLYEY4d8LYgSdh4MkjbgK5EqZG47xo7Sr3xDRI'
-  );
 
   runApp(const MyApp());
 }
