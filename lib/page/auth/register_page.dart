@@ -1,66 +1,54 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../l10n/app_localizations.dart';
+import '../../services/auth_service.dart';
 import '../home_page.dart';
 
-class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+class SupabaseRegisterPage extends StatefulWidget {
+  const SupabaseRegisterPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  State<SupabaseRegisterPage> createState() => _SupabaseRegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _SupabaseRegisterPageState extends State<SupabaseRegisterPage> {
+  final _authService = SupabaseAuthService();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  void _register() async {
-    setState(() {
-      _isLoading = true;
-    });
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
+  Future<void> _register() async {
+    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    final name = _nameController.text.trim();
 
     if (email.isEmpty || password.isEmpty || name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
-      setState(() {
-        _isLoading = false;
-      });
+      _showMessage('Please fill in all fields', isError: true);
       return;
     }
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      // Check if email already exists
-      final existingEmail = prefs.getString('user_email');
-      if (existingEmail == email) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Email already registered'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-      
-      // Save user credentials
-      await prefs.setString('user_name', name);
-      await prefs.setString('user_email', email);
-      await prefs.setString('user_password', password);
-      await prefs.setBool('is_logged_in', true);
+    if (password.length < 6) {
+      _showMessage('Password must be at least 6 characters', isError: true);
+      return;
+    }
 
+    setState(() => _isLoading = true);
+
+    try {
+      await _authService.signUp(
+        email: email,
+        password: password,
+        fullName: name,
+      );
+
+      // Navigate to HomePage after successful registration
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomePage()),
@@ -69,20 +57,22 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showMessage('Registration failed: ${e.toString()}', isError: true);
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
   }
 
   @override
@@ -104,20 +94,20 @@ class _RegisterPageState extends State<RegisterPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                AppLocalizations.of(context).registerTitle,
+              const Text(
+                'Create Account',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF5A5A5A),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 40),
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context).fullName,
+                  labelText: 'Full Name',
                   prefixIcon: const Icon(Icons.person_outline),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -129,8 +119,9 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 16),
               TextField(
                 controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context).email,
+                  labelText: 'Email',
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -144,7 +135,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context).password,
+                  labelText: 'Password (min 6 characters)',
                   prefixIcon: const Icon(Icons.lock_outline),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -172,9 +163,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           strokeWidth: 2,
                         ),
                       )
-                    : Text(
-                        AppLocalizations.of(context).registerButton,
-                        style: const TextStyle(fontSize: 16, color: Colors.white),
+                    : const Text(
+                        'Register',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
               ),
             ],

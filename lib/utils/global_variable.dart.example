@@ -1,0 +1,19 @@
+// =============================================================================
+// TEMPLATE FILE - Copy this to global_variable.dart
+// =============================================================================
+//
+// CARA SETUP:
+// 1. Copy file ini menjadi "global_variable.dart"
+// 2. Ganti 'YOUR_GEMINI_API_KEY_HERE' dengan API key Gemini Anda
+// 3. File global_variable.dart sudah di-gitignore, aman dari commit
+//
+// CARA DAPAT API KEY:
+// 1. Buka https://makersuite.google.com/app/apikey
+// 2. Login dengan Google Account
+// 3. Klik "Create API Key"
+// 4. Copy API key yang didapat
+//
+// =============================================================================
+
+// Gemini API Key - JANGAN SHARE KE PUBLIK!
+const String apiKey = 'YOUR_GEMINI_API_KEY_HERE';

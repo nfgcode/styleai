@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import 'auth/login_page.dart';
+import '../services/auth_service.dart';
 import 'try_on_page.dart';
 import '../fragment/fragment_generate_text.dart';
 
@@ -60,14 +62,6 @@ class HomeContent extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade400,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.menu, color: Colors.white),
-        ),
         title: const Text(
           'StyleAI',
           style: TextStyle(
@@ -108,15 +102,7 @@ class HomeContent extends StatelessWidget {
               ),
             ],
           ),
-          Container(
-            margin: const EdgeInsets.all(8),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade400,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.settings, color: Colors.white, size: 20),
-          ),
+          const SizedBox(width: 8), // Spacing from edge
         ],
       ),
       body: SingleChildScrollView(
@@ -496,6 +482,22 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadProfile() async {
+    // Check Supabase auth first
+    final supabaseUser = Supabase.instance.client.auth.currentUser;
+    
+    if (supabaseUser != null) {
+      // User logged in with Supabase
+      if (mounted) {
+        setState(() {
+          _userName = supabaseUser.userMetadata?['full_name'] as String? ?? 'User';
+          _userEmail = supabaseUser.email ?? '';
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+    
+    // Fallback to SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
@@ -507,11 +509,20 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _signOut() async {
+    // Sign out from Supabase if logged in
+    final supabaseUser = Supabase.instance.client.auth.currentUser;
+    if (supabaseUser != null) {
+      await SupabaseAuthService().signOut();
+    }
+    
+    // Sign out from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_logged_in', false);
+    
     if (mounted) {
+      // Navigate to Supabase login (default)
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginPage()),
+        MaterialPageRoute(builder: (context) => const SupabaseLoginPage()),
         (route) => false,
       );
     }

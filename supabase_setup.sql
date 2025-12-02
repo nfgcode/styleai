@@ -1,0 +1,14 @@
+-- =====================================================
+-- DEPRECATED - USE supabase_schema.sql INSTEAD
+-- =====================================================
+-- 
+-- File ini sudah tidak digunakan.
+-- Gunakan file "supabase_schema.sql" untuk setup lengkap.
+-- 
+-- supabase_schema.sql includes:
+-- - Profiles table
+-- - Try-on history table
+-- - Storage buckets for avatars
+-- - All policies and triggers
+-- 
+-- =====================================================

@@ -33,6 +33,9 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Sensitive files - API Keys & Secrets
+lib/utils/global_variable.dart
+
 # Symbolication related
 app.*.symbols
 

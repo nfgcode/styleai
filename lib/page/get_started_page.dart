@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import 'auth/login_page.dart';
@@ -20,10 +21,23 @@ class _GetStartedPageState extends State<GetStartedPage> {
   }
 
   Future<void> _checkLoginStatus() async {
+    // Check Supabase auth first (priority)
+    final supabaseUser = Supabase.instance.client.auth.currentUser;
+    
+    if (supabaseUser != null && mounted) {
+      // User logged in with Supabase
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+      return;
+    }
+    
+    // Check SharedPreferences auth (fallback)
     final prefs = await SharedPreferences.getInstance();
     final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
     
     if (isLoggedIn && mounted) {
+      // User logged in with SharedPreferences
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomePage()),
       );
@@ -127,7 +141,7 @@ class _GetStartedPageState extends State<GetStartedPage> {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                      MaterialPageRoute(builder: (context) => const SupabaseLoginPage()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
