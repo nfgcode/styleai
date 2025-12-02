@@ -150,43 +150,67 @@ class HomeContent extends StatelessWidget {
                       right: -20,
                       bottom: -20,
                       child: Image.network(
-                        'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop',
+                        'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&h=300&fit=crop',
                         height: 220,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 220,
+                            width: 200,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.style, size: 80, color: Colors.white),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: 220,
+                            width: 200,
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context).homePromo,
-                            style: const TextStyle(fontSize: 14, color: Colors.black54),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            AppLocalizations.of(context).homeGetStyle,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              height: 1.2,
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.5,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context).homePromo,
+                              style: const TextStyle(fontSize: 12, color: Colors.black54),
                             ),
-                          ),
-                          const SizedBox(height: 15),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(20),
+                            const SizedBox(height: 5),
+                            Text(
+                              AppLocalizations.of(context).homeGetStyle,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                height: 1.2,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            child: Text(
-                              AppLocalizations.of(context).homeAskAI,
-                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                AppLocalizations.of(context).homeAskAI,
+                                style: const TextStyle(color: Colors.white, fontSize: 11),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -208,19 +232,37 @@ class HomeContent extends StatelessWidget {
                     'Simple Blazer',
                     'Unisex Blazer',
                     '\$80',
-                    'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=1000&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
                     'Printed Shirt',
                     'Zara',
                     '\$20',
-                    'https://images.unsplash.com/photo-1603252109303-2751440b0179?q=80&w=1000&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
                     'Denim Jacket',
                     'Levis',
                     '\$40',
-                    'https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?q=80&w=1000&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=300&h=300&fit=crop',
+                  ),
+                  _buildArrivalCard(
+                    'Casual Hoodie',
+                    'Nike',
+                    '\$55',
+                    'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=300&h=300&fit=crop',
+                  ),
+                  _buildArrivalCard(
+                    'Sport Tee',
+                    'Adidas',
+                    '\$25',
+                    'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop',
+                  ),
+                  _buildArrivalCard(
+                    'Winter Coat',
+                    'H&M',
+                    '\$120',
+                    'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=300&h=300&fit=crop',
                   ),
                 ],
               ),
@@ -231,60 +273,93 @@ class HomeContent extends StatelessWidget {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
-            Container(
-              height: 150,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Stack(
+            SizedBox(
+              height: 240,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Manjakan Kakimu dengan\nSepatu Kami',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: const Text(
-                            'Lihat Sekarang',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  _buildArrivalCard(
+                    'Nike Air Max',
+                    'Nike',
+                    '\$150',
+                    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=300&fit=crop',
                   ),
-                  Positioned(
-                    right: 10,
-                    bottom: 10,
-                    child: Image.network(
-                      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop',
-                      height: 100,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.image_not_supported, size: 100, color: Colors.white54);
-                      },
-                    ),
+                  _buildArrivalCard(
+                    'Adidas Ultra',
+                    'Adidas',
+                    '\$180',
+                    'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=300&h=300&fit=crop',
+                  ),
+                  _buildArrivalCard(
+                    'Vans Classic',
+                    'Vans',
+                    '\$65',
+                    'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=300&h=300&fit=crop',
+                  ),
+                  _buildArrivalCard(
+                    'Converse High',
+                    'Converse',
+                    '\$75',
+                    'https://images.unsplash.com/photo-1514989940723-e8e51635b782?w=300&h=300&fit=crop',
+                  ),
+                  _buildArrivalCard(
+                    'Puma Suede',
+                    'Puma',
+                    '\$90',
+                    'https://images.unsplash.com/photo-1449505278894-297fdb3edbc1?w=300&h=300&fit=crop',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 25),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Aksesoris',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text('Lihat Semua'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 240,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _buildArrivalCard(
+                    'Leather Watch',
+                    'Fossil',
+                    '\$120',
+                    'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=300&h=300&fit=crop',
+                  ),
+                  _buildArrivalCard(
+                    'Sunglasses',
+                    'Ray-Ban',
+                    '\$85',
+                    'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=300&fit=crop',
+                  ),
+                  _buildArrivalCard(
+                    'Leather Bag',
+                    'Coach',
+                    '\$200',
+                    'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=300&h=300&fit=crop',
+                  ),
+                  _buildArrivalCard(
+                    'Baseball Cap',
+                    'New Era',
+                    '\$35',
+                    'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=300&h=300&fit=crop',
+                  ),
+                  _buildArrivalCard(
+                    'Leather Belt',
+                    'Gucci',
+                    '\$95',
+                    'https://images.unsplash.com/photo-1624222247344-550fb60583bb?w=300&h=300&fit=crop',
                   ),
                 ],
               ),
