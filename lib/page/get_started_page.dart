@@ -161,40 +161,11 @@ class _GetStartedPageState extends State<GetStartedPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
-              // Social Icons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _socialIcon(Icons.apple),
-                  const SizedBox(width: 20),
-                  _socialIcon(Icons.g_mobiledata, size: 35), // Google-ish icon
-                ],
-              ),
               const SizedBox(height: 20),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _socialIcon(IconData icon, {double size = 24}) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Icon(icon, color: Colors.black, size: size),
     );
   }
 }

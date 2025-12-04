@@ -28,7 +28,19 @@ class _FragmentGenerateImageState extends State<FragmentGenerateImage> {
 
     return Scaffold(
         resizeToAvoidBottomInset: false,
-        body: ListView(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.blue.shade50,
+                Colors.purple.shade50,
+                Colors.pink.shade50,
+              ],
+            ),
+          ),
+          child: ListView(
           children: [
             GestureDetector(
               onTap: () {
@@ -275,7 +287,8 @@ class _FragmentGenerateImageState extends State<FragmentGenerateImage> {
                 )
             )
           ],
-        )
+        ),
+        ),
     );
   }
 

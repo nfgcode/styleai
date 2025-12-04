@@ -1,4 +1,4 @@
-package com.example.styleai
+package com.nfgcode.styleai
 
 import io.flutter.embedding.android.FlutterActivity
 
