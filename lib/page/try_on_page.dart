@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,8 +8,37 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/global_variable.dart';
+
+class OutfitItem {
+  final String category;
+  final String description;
+  final String link;
+
+  OutfitItem({
+    required this.category,
+    required this.description,
+    required this.link,
+  });
+
+  factory OutfitItem.fromJson(Map<String, dynamic> json) {
+    return OutfitItem(
+      category: json['category'] ?? '',
+      description: json['description'] ?? '',
+      link: json['link'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'category': category,
+      'description': description,
+      'link': link,
+    };
+  }
+}
 
 class TryOnPage extends StatefulWidget {
   final bool isTab;
@@ -22,8 +53,8 @@ class _TryOnPageState extends State<TryOnPage> {
   Uint8List? imageBytes;
   Uint8List? resultImageBytes;
   final imagePicker = ImagePicker();
-  String strAnswer = '';
-  String purchaseLink = '';
+  List<OutfitItem> outfitItems = [];
+  String aiAnalysisMarkdown = '';
   bool _isLoading = false;
   bool _isFavorite = false;
   final _supabase = Supabase.instance.client;
@@ -91,7 +122,7 @@ class _TryOnPageState extends State<TryOnPage> {
           ),
         ),
       ),
-      floatingActionButton: (imageFile != null || imageBytes != null) && !_isLoading
+      floatingActionButton: (imageFile != null || imageBytes != null) && !_isLoading && resultImageBytes == null
           ? Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -122,19 +153,17 @@ class _TryOnPageState extends State<TryOnPage> {
   }
 
   Widget _buildMainContent() {
+    // Jika ada result, tampilkan full result card saja tanpa upload card
+    if (resultImageBytes != null) {
+      return _buildResultCard();
+    }
+    
+    // Jika belum ada result, tampilkan upload card
     return Column(
       children: [
-        // Input Image Section
         Expanded(
-          flex: resultImageBytes != null ? 1 : 2,
           child: _buildImageUploadCard(),
         ),
-        // Result Image Section
-        if (resultImageBytes != null)
-          Expanded(
-            flex: 2,
-            child: _buildResultCard(),
-          ),
       ],
     );
   }
@@ -322,22 +351,23 @@ class _TryOnPageState extends State<TryOnPage> {
   }
 
   Widget _buildResultCard() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 25,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
+    return SingleChildScrollView(
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 25,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
           // Header with gradient
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -396,8 +426,8 @@ class _TryOnPageState extends State<TryOnPage> {
                     onPressed: () {
                       setState(() {
                         resultImageBytes = null;
-                        strAnswer = '';
-                        purchaseLink = '';
+                        outfitItems = [];
+                        aiAnalysisMarkdown = '';
                         _isFavorite = false;
                       });
                     },
@@ -407,51 +437,107 @@ class _TryOnPageState extends State<TryOnPage> {
             ),
           ),
           // Image Display
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.memory(
-                  resultImageBytes!,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
+          Container(
+            margin: const EdgeInsets.all(16),
+            height: 400,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
                 ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.memory(
+                resultImageBytes!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
               ),
             ),
           ),
-          // Description Card with full text (scrollable)
-          if (strAnswer.isNotEmpty)
+          // AI Analysis Markdown Output
+          if (aiAnalysisMarkdown.isNotEmpty)
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              constraints: const BoxConstraints(maxHeight: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: MarkdownBody(
+                  data: aiAnalysisMarkdown,
+                  styleSheet: MarkdownStyleSheet(
+                    h1: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade900,
+                    ),
+                    h2: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple.shade800,
+                      height: 2,
+                    ),
+                    h3: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.pink.shade700,
+                      height: 1.8,
+                    ),
+                    p: TextStyle(
+                      fontSize: 14,
+                      height: 1.6,
+                      color: Colors.grey.shade800,
+                    ),
+                    strong: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                    listBullet: TextStyle(
+                      color: Colors.purple.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // Quick Shopping Links
+          if (outfitItems.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.blue.shade50,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.blue.shade100),
               ),
-              child: SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.auto_awesome, color: Colors.blue.shade600, size: 20),
+                        Icon(Icons.shopping_bag, color: Colors.blue.shade700, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'AI Recommendations',
+                          Localizations.localeOf(context).languageCode == 'id'
+                              ? '🛍️ Link Belanja Cepat'
+                              : '🛍️ Quick Shopping Links',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.blue.shade900,
                           ),
@@ -459,78 +545,34 @@ class _TryOnPageState extends State<TryOnPage> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      strAnswer,
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.5,
-                        color: Colors.blue.shade900,
+                    ...outfitItems.map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _launchLink(item.link),
+                          icon: const Icon(Icons.shopping_cart_outlined, size: 16),
+                          label: Text(item.category),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    )).toList(),
                   ],
-                ),
-              ),
-            ),
-          const SizedBox(height: 12),
-          // Purchase Button with gradient
-          if (purchaseLink.isNotEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.green.shade400, Colors.teal.shade400],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.green.withValues(alpha: 0.4),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: _launchPurchaseLink,
-                  icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
-                  label: const Text(
-                    'Shop Now',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
                 ),
               ),
             ),
         ],
       ),
+    ),
     );
   }
-
-  // Widget _buildStyleItem(String imageUrl) {
-  //   return Container(
-  //     width: 80,
-  //     margin: const EdgeInsets.only(right: 15),
-  //     decoration: BoxDecoration(
-  //       borderRadius: BorderRadius.circular(15),
-  //       image: DecorationImage(
-  //         image: NetworkImage(imageUrl),
-  //         fit: BoxFit.cover,
-  //       ),
-  //     ),
-  //   );
-  // }
 
   void _showImagePickerOptions() {
     showModalBottomSheet(
@@ -568,13 +610,13 @@ class _TryOnPageState extends State<TryOnPage> {
         setState(() {
           imageBytes = bytes;
           imageFile = null;
-          strAnswer = '';
+          outfitItems = [];
         });
       } else {
         setState(() {
           imageFile = File(pickedFile.path);
           imageBytes = null;
-          strAnswer = '';
+          outfitItems = [];
         });
       }
     }
@@ -590,50 +632,172 @@ class _TryOnPageState extends State<TryOnPage> {
 
     setState(() {
       _isLoading = true;
+      aiAnalysisMarkdown = '';
+      outfitItems = [];
     });
 
-    try {
-      final GenerativeModel model = GenerativeModel(
-          model: 'gemini-3-pro', apiKey: apiKey);
+    // Detect user's language
+    final isIndonesian = Localizations.localeOf(context).languageCode == 'id';
 
-      final List<Content> contents = [
+    try {
+      // Initialize Gemini AI
+      final model = GenerativeModel(
+        model: 'gemini-2.5-flash',
+        apiKey: apiKey,
+      );
+
+      // Prepare image data
+      final imageData = imageBytes ?? await File(imageFile!.path).readAsBytes();
+
+      // Create prompt based on language
+      final prompt = isIndonesian
+          ? '''Analisis foto ini dan berikan rekomendasi style outfit yang cocok.
+
+Format output HARUS dalam Markdown dengan struktur berikut:
+
+# 🎨 Analisis Style
+
+## 👤 Deskripsi Penampilan Saat Ini
+[Jelaskan apa yang terlihat di foto - warna, style, karakteristik]
+
+## ✨ Rekomendasi Outfit
+
+### 1. Casual Style
+**Deskripsi:** [Penjelasan detail outfit casual yang cocok]
+**Item Utama:** [List item-item pakaian]
+**Warna:** [Kombinasi warna yang disarankan]
+**Cocok untuk:** [Occasion/acara yang sesuai]
+
+### 2. Smart Casual
+**Deskripsi:** [Penjelasan detail outfit smart casual yang cocok]
+**Item Utama:** [List item-item pakaian]
+**Warna:** [Kombinasi warna yang disarankan]
+**Cocok untuk:** [Occasion/acara yang sesuai]
+
+### 3. Formal Look
+**Deskripsi:** [Penjelasan detail outfit formal yang cocok]
+**Item Utama:** [List item-item pakaian]
+**Warna:** [Kombinasi warna yang disarankan]
+**Cocok untuk:** [Occasion/acara yang sesuai]
+
+### 4. Street Style
+**Deskripsi:** [Penjelasan detail outfit street style yang cocok]
+**Item Utama:** [List item-item pakaian]
+**Warna:** [Kombinasi warna yang disarankan]
+**Cocok untuk:** [Occasion/acara yang sesuai]
+
+## 💡 Tips Styling
+- [Tip 1]
+- [Tip 2]
+- [Tip 3]
+
+Berikan rekomendasi yang spesifik, praktis, dan mudah diterapkan.'''
+          : '''Analyze this photo and provide suitable outfit style recommendations.
+
+Output MUST be in Markdown format with the following structure:
+
+# 🎨 Style Analysis
+
+## 👤 Current Appearance Description
+[Describe what you see in the photo - colors, style, characteristics]
+
+## ✨ Outfit Recommendations
+
+### 1. Casual Style
+**Description:** [Detailed explanation of suitable casual outfit]
+**Main Items:** [List of clothing items]
+**Colors:** [Suggested color combinations]
+**Perfect for:** [Suitable occasions/events]
+
+### 2. Smart Casual
+**Description:** [Detailed explanation of suitable smart casual outfit]
+**Main Items:** [List of clothing items]
+**Colors:** [Suggested color combinations]
+**Perfect for:** [Suitable occasions/events]
+
+### 3. Formal Look
+**Description:** [Detailed explanation of suitable formal outfit]
+**Main Items:** [List of clothing items]
+**Colors:** [Suggested color combinations]
+**Perfect for:** [Suitable occasions/events]
+
+### 4. Street Style
+**Description:** [Detailed explanation of suitable street style outfit]
+**Main Items:** [List of clothing items]
+**Colors:** [Suggested color combinations]
+**Perfect for:** [Suitable occasions/events]
+
+## 💡 Styling Tips
+- [Tip 1]
+- [Tip 2]
+- [Tip 3]
+
+Provide specific, practical, and easy-to-apply recommendations.''';
+
+      // Generate AI response
+      final content = [
         Content.multi([
-          TextPart(AppLocalizations.of(context).tryOnPrompt),
-          if (imageBytes != null)
-            DataPart('image/jpeg', imageBytes!)
-          else if (imageFile != null)
-            DataPart('image/jpeg', File(imageFile!.path).readAsBytesSync()),
+          DataPart('image/jpeg', imageData),
+          TextPart(prompt),
         ])
       ];
 
-      final response = await model.generateContent(contents);
-      final resultText = response.text ?? 'No analysis available.';
-      
-      // Extract all links (including search suggestions)
-      final linkPattern = RegExp(r'https?://[^\s]+');
-      final matches = linkPattern.allMatches(resultText);
-      String firstLink = '';
-      if (matches.isNotEmpty) {
-        firstLink = matches.first.group(0) ?? '';
+      final response = await model.generateContent(content).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('AI analysis timed out');
+        },
+      );
+
+      final markdownText = response.text ?? '';
+
+      if (markdownText.isEmpty) {
+        throw Exception(isIndonesian ? 'AI tidak memberikan respons' : 'AI did not provide a response');
       }
-      
+
+      // Parse markdown to extract outfit items for shopping links
+      final List<OutfitItem> items = _parseMarkdownToOutfitItems(markdownText, isIndonesian);
+
       setState(() {
-        strAnswer = resultText;
-        purchaseLink = firstLink;
-        // Set resultImageBytes to show result card (use input image as placeholder)
-        resultImageBytes = imageBytes ?? File(imageFile!.path).readAsBytesSync();
-        _isFavorite = false; // Reset favorite status for new analysis
+        aiAnalysisMarkdown = markdownText;
+        outfitItems = items;
+        resultImageBytes = imageData;
+        _isFavorite = false;
       });
 
-    } catch (e) {
-      setState(() {
-        strAnswer = 'Error: ${e.toString()}';
-      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Analysis failed: ${e.toString()}'),
+            content: Text(isIndonesian 
+              ? '✨ Analisis style berhasil! Scroll untuk melihat rekomendasi lengkap.'
+              : '✨ Style analysis complete! Scroll to see full recommendations.'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+
+    } catch (e) {
+      setState(() {
+        aiAnalysisMarkdown = '';
+        outfitItems = [];
+      });
+      
+      if (mounted) {
+        String errorMessage = e.toString();
+        if (e is TimeoutException) {
+          errorMessage = isIndonesian
+              ? 'Timeout: Analisis memakan waktu terlalu lama. Silakan coba lagi.'
+              : 'Timeout: Analysis took too long. Please try again.';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isIndonesian
+              ? 'Terjadi kesalahan: $errorMessage'
+              : 'An error occurred: $errorMessage'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -644,8 +808,53 @@ class _TryOnPageState extends State<TryOnPage> {
     }
   }
 
+  // Helper function to parse markdown and extract outfit items for shopping
+  List<OutfitItem> _parseMarkdownToOutfitItems(String markdown, bool isIndonesian) {
+    final List<OutfitItem> items = [];
+    
+    // Simple regex patterns to extract outfit sections
+    final casualMatch = RegExp(r'### 1\. (.*?)\n', multiLine: true).firstMatch(markdown);
+    final smartMatch = RegExp(r'### 2\. (.*?)\n', multiLine: true).firstMatch(markdown);
+    final formalMatch = RegExp(r'### 3\. (.*?)\n', multiLine: true).firstMatch(markdown);
+    final streetMatch = RegExp(r'### 4\. (.*?)\n', multiLine: true).firstMatch(markdown);
+    
+    if (casualMatch != null) {
+      items.add(OutfitItem(
+        category: casualMatch.group(1) ?? 'Casual Style',
+        description: isIndonesian ? 'Lihat detail lengkap di analisis AI' : 'See full details in AI analysis',
+        link: 'https://www.google.com/search?tbm=shop&q=casual+outfit',
+      ));
+    }
+    
+    if (smartMatch != null) {
+      items.add(OutfitItem(
+        category: smartMatch.group(1) ?? 'Smart Casual',
+        description: isIndonesian ? 'Lihat detail lengkap di analisis AI' : 'See full details in AI analysis',
+        link: 'https://www.google.com/search?tbm=shop&q=smart+casual+outfit',
+      ));
+    }
+    
+    if (formalMatch != null) {
+      items.add(OutfitItem(
+        category: formalMatch.group(1) ?? 'Formal Look',
+        description: isIndonesian ? 'Lihat detail lengkap di analisis AI' : 'See full details in AI analysis',
+        link: 'https://www.google.com/search?tbm=shop&q=formal+outfit',
+      ));
+    }
+    
+    if (streetMatch != null) {
+      items.add(OutfitItem(
+        category: streetMatch.group(1) ?? 'Street Style',
+        description: isIndonesian ? 'Lihat detail lengkap di analisis AI' : 'See full details in AI analysis',
+        link: 'https://www.google.com/search?tbm=shop&q=street+style+outfit',
+      ));
+    }
+    
+    return items;
+  }
+
   Future<void> _toggleFavorite() async {
-    if (resultImageBytes == null || strAnswer.isEmpty) return;
+    if (resultImageBytes == null || outfitItems.isEmpty) return;
 
     try {
       final user = _supabase.auth.currentUser;
@@ -679,19 +888,28 @@ class _TryOnPageState extends State<TryOnPage> {
         final prefs = await SharedPreferences.getInstance();
         final favoritesList = prefs.getStringList('favorites') ?? [];
         
-        // Save to local storage
-        final favoriteItem = '${DateTime.now().millisecondsSinceEpoch}|||$strAnswer|||$purchaseLink';
-        favoritesList.add(favoriteItem);
+        // Save both outfit items and AI markdown to local storage
+        final Map<String, dynamic> favoriteData = {
+          'outfitItems': outfitItems.map((item) => item.toJson()).toList(),
+          'aiAnalysis': aiAnalysisMarkdown,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        };
+        
+        final favoriteJson = jsonEncode(favoriteData);
+        favoritesList.add(favoriteJson);
         await prefs.setStringList('favorites', favoritesList);
 
         // Optionally save to Supabase
         try {
-          await _supabase.from('user_favorites').insert({
-            'user_id': user.id,
-            'outfit_description': strAnswer,
-            'purchase_link': purchaseLink,
-            'created_at': DateTime.now().toIso8601String(),
-          });
+          final response = await _supabase.from('user_favorites').insert([
+            {
+              'user_id': user.id,
+              'outfit_description': favoriteJson,
+              'purchase_link': outfitItems.isNotEmpty ? outfitItems.first.link : '',
+              'created_at': DateTime.now().toIso8601String(),
+            }
+          ]).select();
+          debugPrint('Supabase save success: $response');
         } catch (e) {
           // Supabase save failed, but local save succeeded
           debugPrint('Supabase save failed: $e');
@@ -704,8 +922,9 @@ class _TryOnPageState extends State<TryOnPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Added to favorites! ❤️'),
+              content: Text('Berhasil ditambahkan ke favorit! ❤️'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
             ),
           );
         }
@@ -714,29 +933,30 @@ class _TryOnPageState extends State<TryOnPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('Gagal menyimpan ke favorit: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
     }
   }
 
-  Future<void> _launchPurchaseLink() async {
-    if (purchaseLink.isEmpty) {
+  Future<void> _launchLink(String link) async {
+    if (link.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No purchase link available')),
+        const SnackBar(content: Text('No shopping link available')),
       );
       return;
     }
 
-    final uri = Uri.parse(purchaseLink);
+    final uri = Uri.parse(link);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open purchase link')),
+          const SnackBar(content: Text('Could not open shopping link')),
         );
       }
     }
