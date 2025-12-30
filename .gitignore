@@ -33,8 +33,11 @@ migrate_working_dir/
 /build/
 /coverage/
 
+
 # Sensitive files - API Keys & Secrets
 lib/utils/global_variable.dart
+lib/config/supabase_config.dart
+.env
 
 # Symbolication related
 app.*.symbols

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,10 +6,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/global_variable.dart';
+import '../data/repositories/history_repository.dart';
+import '../data/models/history_entry.dart';
+import '../data/models/product_link.dart';
 
 class OutfitItem {
   final String category;
@@ -57,7 +58,9 @@ class _TryOnPageState extends State<TryOnPage> {
   String aiAnalysisMarkdown = '';
   bool _isLoading = false;
   bool _isFavorite = false;
+  String? _currentHistoryId; // Track current saved history entry
   final _supabase = Supabase.instance.client;
+  final HistoryRepository _historyRepo = HistoryRepository();
 
   @override
   Widget build(BuildContext context) {
@@ -243,9 +246,9 @@ class _TryOnPageState extends State<TryOnPage> {
                     ),
                   ),
                   const SizedBox(height: 28),
-                  const Text(
-                    'Upload Full Body Photo',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context).tryOnUploadBody,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
@@ -253,7 +256,7 @@ class _TryOnPageState extends State<TryOnPage> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Let AI find your perfect outfit',
+                    AppLocalizations.of(context).tryOnLetAI,
                     style: TextStyle(
                       fontSize: 15,
                       color: Colors.grey.shade600,
@@ -289,7 +292,7 @@ class _TryOnPageState extends State<TryOnPage> {
                     const Icon(Icons.add_photo_alternate, size: 20, color: Colors.white),
                     const SizedBox(width: 10),
                     Text(
-                      imageFile != null || imageBytes != null ? 'Change Photo' : AppLocalizations.of(context).tryOnUpload,
+                      imageFile != null || imageBytes != null ? AppLocalizations.of(context).tryOnChangePhoto : AppLocalizations.of(context).tryOnUpload,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -325,9 +328,9 @@ class _TryOnPageState extends State<TryOnPage> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Analyzing your style...',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context).tryOnAnalyzing,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -335,7 +338,7 @@ class _TryOnPageState extends State<TryOnPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'AI is finding perfect outfits for you',
+                      AppLocalizations.of(context).tryOnFindingOutfits,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 14,
@@ -429,6 +432,7 @@ class _TryOnPageState extends State<TryOnPage> {
                         outfitItems = [];
                         aiAnalysisMarkdown = '';
                         _isFavorite = false;
+                        _currentHistoryId = null;
                       });
                     },
                   ),
@@ -611,14 +615,55 @@ class _TryOnPageState extends State<TryOnPage> {
           imageBytes = bytes;
           imageFile = null;
           outfitItems = [];
+          _currentHistoryId = null;
+          _isFavorite = false;
         });
       } else {
         setState(() {
           imageFile = File(pickedFile.path);
           imageBytes = null;
           outfitItems = [];
+          _currentHistoryId = null;
+          _isFavorite = false;
         });
       }
+    }
+  }
+
+  Future<String?> _saveToHistory(String analysis, List<OutfitItem> items, bool isIndonesian) async {
+    try {
+      // Create product links from outfit items
+      final productLinks = items.asMap().entries.map((entry) => ProductLink(
+        id: '${DateTime.now().millisecondsSinceEpoch}_${entry.key}',
+        title: entry.value.category,
+        source: isIndonesian ? 'Rekomendasi AI' : 'AI Recommendation',
+        url: entry.value.link,
+      )).toList();
+
+      // Create history entry with current favorite state
+      final entry = HistoryEntry(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: HistoryType.tryon,
+        title: isIndonesian ? 'Rekomendasi Style AI' : 'AI Style Recommendation',
+        description: analysis.length > 150 
+            ? '${analysis.substring(0, 150)}...' 
+            : analysis,
+        thumbnailUrl: null, // Could upload image to Supabase Storage in future
+        createdAt: DateTime.now(),
+        payload: {
+          'analysis': analysis,
+          'outfitItems': items.map((item) => item.toJson()).toList(),
+          'productLinks': productLinks.map((link) => link.toJson()).toList(),
+        },
+        isFavorite: _isFavorite, // Use current favorite state
+      );
+
+      final savedId = await _historyRepo.saveHistory(entry);
+      debugPrint('✅ Try-on history saved successfully with ID: $savedId');
+      return savedId;
+    } catch (e) {
+      debugPrint('⚠️ Failed to save try-on history: $e');
+      return null;
     }
   }
 
@@ -765,6 +810,14 @@ Provide specific, practical, and easy-to-apply recommendations.''';
         _isFavorite = false;
       });
 
+      // Save to history and store the ID
+      final savedId = await _saveToHistory(markdownText, items, isIndonesian);
+      if (savedId != null) {
+        setState(() {
+          _currentHistoryId = savedId;
+        });
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -870,70 +923,52 @@ Provide specific, practical, and easy-to-apply recommendations.''';
         return;
       }
 
-      if (_isFavorite) {
-        // Remove from favorites (optional: implement removal from database)
-        setState(() {
-          _isFavorite = false;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Removed from favorites'),
-              backgroundColor: Colors.grey,
-            ),
-          );
+      final isIndonesian = Localizations.localeOf(context).languageCode == 'id';
+      
+      // Update favorite state first
+      setState(() {
+        _isFavorite = !_isFavorite;
+      });
+
+      // If not saved yet, save to history with favorite state
+      if (_currentHistoryId == null) {
+        debugPrint('📝 Saving new history entry with favorite state: $_isFavorite');
+        final savedId = await _saveToHistory(aiAnalysisMarkdown, outfitItems, isIndonesian);
+        if (savedId != null) {
+          setState(() {
+            _currentHistoryId = savedId;
+          });
+          debugPrint('✅ History saved with ID: $savedId, isFavorite: $_isFavorite');
         }
       } else {
-        // Add to favorites
-        final prefs = await SharedPreferences.getInstance();
-        final favoritesList = prefs.getStringList('favorites') ?? [];
-        
-        // Save both outfit items and AI markdown to local storage
-        final Map<String, dynamic> favoriteData = {
-          'outfitItems': outfitItems.map((item) => item.toJson()).toList(),
-          'aiAnalysis': aiAnalysisMarkdown,
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-        };
-        
-        final favoriteJson = jsonEncode(favoriteData);
-        favoritesList.add(favoriteJson);
-        await prefs.setStringList('favorites', favoritesList);
-
-        // Optionally save to Supabase
-        try {
-          final response = await _supabase.from('user_favorites').insert([
-            {
-              'user_id': user.id,
-              'outfit_description': favoriteJson,
-              'purchase_link': outfitItems.isNotEmpty ? outfitItems.first.link : '',
-              'created_at': DateTime.now().toIso8601String(),
-            }
-          ]).select();
-          debugPrint('Supabase save success: $response');
-        } catch (e) {
-          // Supabase save failed, but local save succeeded
-          debugPrint('Supabase save failed: $e');
-        }
-
-        setState(() {
-          _isFavorite = true;
-        });
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Berhasil ditambahkan ke favorit! ❤️'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+        // If already saved, toggle favorite in database
+        debugPrint('🔄 Toggling favorite for existing entry: $_currentHistoryId');
+        await _historyRepo.toggleFavorite(_currentHistoryId!);
+        debugPrint('✅ Favorite toggled successfully for ID: $_currentHistoryId, new state: $_isFavorite');
       }
-    } catch (e) {
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menyimpan ke favorit: ${e.toString()}'),
+            content: Text(_isFavorite 
+              ? (isIndonesian ? 'Berhasil ditambahkan ke favorit! ❤️' : 'Added to favorites! ❤️')
+              : (isIndonesian ? 'Dihapus dari favorit' : 'Removed from favorites')),
+            backgroundColor: _isFavorite ? Colors.green : Colors.grey,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to toggle favorite: $e');
+      // Revert state on error
+      setState(() {
+        _isFavorite = !_isFavorite;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save favorite: ${e.toString()}'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),

@@ -10,16 +10,25 @@ class SupabaseAuthService {
     String? fullName,
     Map<String, dynamic>? metadata,
   }) async {
-    final data = <String, dynamic>{};
-    if (fullName != null) data['full_name'] = fullName;
-    if (metadata != null) data.addAll(metadata);
-    
-    final response = await _supabase.auth.signUp(
-      email: email,
-      password: password,
-      data: data.isNotEmpty ? data : null,
-    );
-    return response;
+    try {
+      final data = <String, dynamic>{};
+      if (fullName != null) data['full_name'] = fullName;
+      if (metadata != null) data.addAll(metadata);
+      
+      final response = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: data.isNotEmpty ? data : null,
+      );
+      
+      return response;
+    } on AuthException catch (e) {
+      // Rethrow with more specific error message
+      throw AuthException(e.message);
+    } catch (e) {
+      // Handle other exceptions
+      throw Exception('Registration failed: ${e.toString()}');
+    }
   }
 
   // Sign In dengan email dan password

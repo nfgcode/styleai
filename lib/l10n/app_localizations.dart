@@ -26,6 +26,10 @@ class AppLocalizations {
       'homePromo': 'Special Promo!',
       'homeGetStyle': 'Get Style\nAdvice',
       'homeAskAI': 'Ask AI Now',
+      'homeScanOutfit': 'Scan Outfit',
+      'homeScanSubtitle': 'Analyze your style',
+      'homeHistory': 'History',
+      'homeHistorySubtitle': 'View past scans',
       'navHome': 'Home',
       'navTryOn': 'Try-On',
       'navCart': 'Cart',
@@ -37,6 +41,17 @@ class AppLocalizations {
       'gallery': 'Gallery',
       'camera': 'Camera',
       'pleaseUpload': 'Please upload an image first',
+      'tryOnUploadBody': 'Upload Full Body Photo',
+      'tryOnLetAI': 'Let AI find your perfect outfit',
+      'tryOnChangePhoto': 'Change Photo',
+      'tryOnAnalyzing': 'Analyzing your style...',
+      'tryOnFindingOutfits': 'AI is finding perfect outfits for you',
+      'tryOnQuickShopping': 'Quick Shopping Links',
+      'tryOnShopRecommendations': 'Shop Recommendations',
+      'profileSettings': 'Profile Settings',
+      'profileLogout': 'Logout',
+      'profileConfirmLogout': 'Are you sure you want to logout?',
+      'profileCancel': 'Cancel',
       'language': 'Language',
       'email': 'Email',
       'password': 'Password',
@@ -58,6 +73,10 @@ class AppLocalizations {
       'homePromo': 'Promo Spesial!',
       'homeGetStyle': 'Dapatkan Saran\nGaya',
       'homeAskAI': 'Tanya AI Sekarang',
+      'homeScanOutfit': 'Pindai Outfit',
+      'homeScanSubtitle': 'Analisis gayamu',
+      'homeHistory': 'Riwayat',
+      'homeHistorySubtitle': 'Lihat riwayat scan',
       'navHome': 'Beranda',
       'navTryOn': 'Coba Gaya',
       'navCart': 'Keranjang',
@@ -69,6 +88,17 @@ class AppLocalizations {
       'gallery': 'Galeri',
       'camera': 'Kamera',
       'pleaseUpload': 'Silakan unggah gambar terlebih dahulu',
+      'tryOnUploadBody': 'Unggah Foto Seluruh Badan',
+      'tryOnLetAI': 'Biarkan AI temukan outfit sempurna Anda',
+      'tryOnChangePhoto': 'Ganti Foto',
+      'tryOnAnalyzing': 'Menganalisis gaya Anda...',
+      'tryOnFindingOutfits': 'AI sedang menemukan outfit sempurna untuk Anda',
+      'tryOnQuickShopping': 'Link Belanja Cepat',
+      'tryOnShopRecommendations': 'Belanja Rekomendasi',
+      'profileSettings': 'Pengaturan Profil',
+      'profileLogout': 'Keluar',
+      'profileConfirmLogout': 'Yakin ingin keluar?',
+      'profileCancel': 'Batal',
       'language': 'Bahasa',
       'email': 'Email',
       'password': 'Kata Sandi',
@@ -91,6 +121,10 @@ class AppLocalizations {
   String get homePromo => _localizedValues[locale.languageCode]!['homePromo']!;
   String get homeGetStyle => _localizedValues[locale.languageCode]!['homeGetStyle']!;
   String get homeAskAI => _localizedValues[locale.languageCode]!['homeAskAI']!;
+  String get homeScanOutfit => _localizedValues[locale.languageCode]!['homeScanOutfit']!;
+  String get homeScanSubtitle => _localizedValues[locale.languageCode]!['homeScanSubtitle']!;
+  String get homeHistory => _localizedValues[locale.languageCode]!['homeHistory']!;
+  String get homeHistorySubtitle => _localizedValues[locale.languageCode]!['homeHistorySubtitle']!;
   String get navHome => _localizedValues[locale.languageCode]!['navHome']!;
   String get navTryOn => _localizedValues[locale.languageCode]!['navTryOn']!;
   String get navCart => _localizedValues[locale.languageCode]!['navCart']!;
@@ -102,6 +136,17 @@ class AppLocalizations {
   String get gallery => _localizedValues[locale.languageCode]!['gallery']!;
   String get camera => _localizedValues[locale.languageCode]!['camera']!;
   String get pleaseUpload => _localizedValues[locale.languageCode]!['pleaseUpload']!;
+  String get tryOnUploadBody => _localizedValues[locale.languageCode]!['tryOnUploadBody']!;
+  String get tryOnLetAI => _localizedValues[locale.languageCode]!['tryOnLetAI']!;
+  String get tryOnChangePhoto => _localizedValues[locale.languageCode]!['tryOnChangePhoto']!;
+  String get tryOnAnalyzing => _localizedValues[locale.languageCode]!['tryOnAnalyzing']!;
+  String get tryOnFindingOutfits => _localizedValues[locale.languageCode]!['tryOnFindingOutfits']!;
+  String get tryOnQuickShopping => _localizedValues[locale.languageCode]!['tryOnQuickShopping']!;
+  String get tryOnShopRecommendations => _localizedValues[locale.languageCode]!['tryOnShopRecommendations']!;
+  String get profileSettings => _localizedValues[locale.languageCode]!['profileSettings']!;
+  String get profileLogout => _localizedValues[locale.languageCode]!['profileLogout']!;
+  String get profileConfirmLogout => _localizedValues[locale.languageCode]!['profileConfirmLogout']!;
+  String get profileCancel => _localizedValues[locale.languageCode]!['profileCancel']!;
   String get language => _localizedValues[locale.languageCode]!['language']!;
   String get email => _localizedValues[locale.languageCode]!['email']!;
   String get password => _localizedValues[locale.languageCode]!['password']!;

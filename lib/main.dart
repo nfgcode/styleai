@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'config/supabase_config.dart';
 import 'l10n/app_localizations.dart';
 import 'page/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase
-  await Supabase.initialize(
-    url: 'https://iwnugsuxwxxtkhsgmyxq.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3bnVnc3V4d3h4dGtoc2dteXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2OTMwNjAsImV4cCI6MjA4MDI2OTA2MH0.HhGACpttEtlari-x1yPByi6Gv2tO4Epc0UTzeQ5xc7Y',
-  );
+  try {
+    // Initialize Supabase with configuration
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      anonKey: SupabaseConfig.anonKey,
+    );
+  } catch (e) {
+    debugPrint('Error initializing Supabase: $e');
+  }
 
   runApp(const MyApp());
 }

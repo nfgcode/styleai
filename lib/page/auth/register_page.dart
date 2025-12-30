@@ -42,22 +42,50 @@ class _SupabaseRegisterPageState extends State<SupabaseRegisterPage> {
     setState(() => _isLoading = true);
 
     try {
-      await _authService.signUp(
+      final response = await _authService.signUp(
         email: email,
         password: password,
         fullName: name,
       );
 
-      // Navigate to HomePage after successful registration
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomePage()),
-          (route) => false,
-        );
+        // Check if email confirmation is required
+        if (response.user != null && response.session == null) {
+          // Email confirmation is required
+          _showMessage(
+            'Registration successful! Please check your email to confirm your account.',
+            isError: false,
+          );
+          
+          // Wait a bit before navigating back to login
+          await Future.delayed(const Duration(seconds: 2));
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        } else if (response.session != null) {
+          // Registration successful and user is logged in
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const HomePage()),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        _showMessage('Registration failed: ${e.toString()}', isError: true);
+        // Parse error message to be more user-friendly
+        String errorMessage = e.toString();
+        
+        if (errorMessage.contains('User already registered')) {
+          errorMessage = 'This email is already registered. Please login instead.';
+        } else if (errorMessage.contains('Failed to fetch')) {
+          errorMessage = 'Connection error. Please check your internet connection and try again.';
+        } else if (errorMessage.contains('Invalid email')) {
+          errorMessage = 'Please enter a valid email address.';
+        } else {
+          errorMessage = 'Registration failed: $errorMessage';
+        }
+        
+        _showMessage(errorMessage, isError: true);
       }
     } finally {
       if (mounted) {

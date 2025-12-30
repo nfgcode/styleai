@@ -8,6 +8,7 @@ import 'auth/login_page.dart';
 import '../services/auth_service.dart';
 import 'try_on_page.dart';
 import '../fragment/fragment_generate_text.dart';
+import '../presentation/pages/history/history_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,7 +23,6 @@ class _HomePageState extends State<HomePage> {
   final List<Widget> _pages = [
     const HomeContent(),
     const TryOnPage(isTab: true),
-    const FavoritesPage(),
     const ProfilePage(),
   ];
 
@@ -54,10 +54,6 @@ class _HomePageState extends State<HomePage> {
             BottomNavigationBarItem(
               icon: const Icon(Icons.auto_awesome_rounded),
               label: AppLocalizations.of(context).navTryOn,
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_rounded),
-              label: 'Favorites',
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.person_rounded),
@@ -308,6 +304,53 @@ class HomeContent extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 25),
+
+                      // Quick Actions Section
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              context,
+                              icon: Icons.camera_alt,
+                              title: AppLocalizations.of(context).homeScanOutfit,
+                              subtitle: AppLocalizations.of(context).homeScanSubtitle,
+                              gradient: LinearGradient(
+                                colors: [Colors.blue.shade400, Colors.blue.shade600],
+                              ),
+                              onTap: () {
+                                // Navigate to Coba Gaya tab (index 1)
+                                final homeState = context.findAncestorStateOfType<_HomePageState>();
+                              if (homeState != null) {
+                                homeState._selectedIndex = 1;
+                                homeState.setState(() {});
+                              }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              context,
+                              icon: Icons.history,
+                              title: AppLocalizations.of(context).homeHistory,
+                              subtitle: AppLocalizations.of(context).homeHistorySubtitle,
+                              gradient: LinearGradient(
+                                colors: [Colors.purple.shade400, Colors.purple.shade600],
+                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const HistoryPage(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 25),
                       Text(
                         AppLocalizations.of(context).homeNew,
                         style: const TextStyle(
@@ -323,39 +366,45 @@ class HomeContent extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 children: [
                   _buildArrivalCard(
+                    context,
                     'Simple Blazer',
                     'Unisex Blazer',
-                    '\$80',
+                    80,
                     'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Printed Shirt',
                     'Zara',
-                    '\$20',
+                    20,
                     'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Denim Jacket',
                     'Levis',
-                    '\$40',
+                    40,
                     'https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Casual Hoodie',
                     'Nike',
-                    '\$55',
+                    55,
                     'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Sport Tee',
                     'Adidas',
-                    '\$25',
+                    25,
                     'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Winter Coat',
                     'H&M',
-                    '\$120',
+                    120,
                     'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=300&h=300&fit=crop',
                   ),
                 ],
@@ -373,33 +422,38 @@ class HomeContent extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 children: [
                   _buildArrivalCard(
+                    context,
                     'Nike Air Max',
                     'Nike',
-                    '\$150',
+                    150,
                     'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Adidas Ultra',
                     'Adidas',
-                    '\$180',
+                    180,
                     'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Vans Classic',
                     'Vans',
-                    '\$65',
+                    65,
                     'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Converse High',
                     'Converse',
-                    '\$75',
+                    75,
                     'https://images.unsplash.com/photo-1514989940723-e8e51635b782?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Puma Suede',
                     'Puma',
-                    '\$90',
+                    90,
                     'https://images.unsplash.com/photo-1449505278894-297fdb3edbc1?w=300&h=300&fit=crop',
                   ),
                 ],
@@ -426,33 +480,38 @@ class HomeContent extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 children: [
                   _buildArrivalCard(
+                    context,
                     'Leather Watch',
                     'Fossil',
-                    '\$120',
+                    120,
                     'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Sunglasses',
                     'Ray-Ban',
-                    '\$85',
+                    85,
                     'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Leather Bag',
                     'Coach',
-                    '\$200',
+                    200,
                     'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Baseball Cap',
                     'New Era',
-                    '\$35',
+                    35,
                     'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=300&h=300&fit=crop',
                   ),
                   _buildArrivalCard(
+                    context,
                     'Leather Belt',
                     'Gucci',
-                    '\$95',
+                    95,
                     'https://images.unsplash.com/photo-1624222247344-550fb60583bb?w=300&h=300&fit=crop',
                   ),
                 ],
@@ -469,7 +528,70 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildArrivalCard(String title, String subtitle, String price, String imageUrl) {
+  static Widget _buildQuickActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Gradient gradient,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.colors.first.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: Colors.white, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArrivalCard(BuildContext context, String title, String subtitle, double priceUSD, String imageUrl) {
+    // Format price based on language
+    final isIndonesian = Localizations.localeOf(context).languageCode == 'id';
+    final formattedPrice = isIndonesian 
+        ? 'Rp ${(priceUSD * 15000).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}'
+        : '\$$priceUSD';
+    
     return GestureDetector(
       onTap: () async {
         final searchQuery = Uri.encodeComponent('$title $subtitle buy online');
@@ -545,7 +667,7 @@ class HomeContent extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  price,
+                  formattedPrice,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
                 ),
               ],
@@ -553,88 +675,6 @@ class HomeContent extends StatelessWidget {
           ),
         ],
       ),
-      ),
-    );
-  }
-}
-
-class FavoritesPage extends StatelessWidget {
-  const FavoritesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.blue.shade50, Colors.purple.shade50, Colors.pink.shade50],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(),
-              Expanded(
-                child: _buildEmptyState(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade400, Colors.purple.shade400],
-              ),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 12),
-          const Text(
-            'My Favorites',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.7),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.favorite_border_rounded, size: 60, color: Colors.grey.shade400),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'No favorites yet',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Save your favorite AI recommendations here',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-          ),
-        ],
       ),
     );
   }
@@ -686,22 +726,63 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _signOut() async {
-    // Sign out from Supabase if logged in
-    final supabaseUser = Supabase.instance.client.auth.currentUser;
-    if (supabaseUser != null) {
-      await SupabaseAuthService().signOut();
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(AppLocalizations.of(context).profileLogout),
+          content: Text(AppLocalizations.of(context).profileConfirmLogout),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(AppLocalizations.of(context).profileCancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: Text(AppLocalizations.of(context).profileLogout),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Only proceed with logout if user confirmed
+    if (confirmed != true) {
+      return;
     }
-    
-    // Sign out from SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_logged_in', false);
-    
-    if (mounted) {
-      // Navigate to Supabase login (default)
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const SupabaseLoginPage()),
-        (route) => false,
-      );
+
+    try {
+      // Sign out from Supabase if logged in
+      final supabaseUser = Supabase.instance.client.auth.currentUser;
+      if (supabaseUser != null) {
+        await SupabaseAuthService().signOut();
+      }
+      
+      // Sign out from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', false);
+      
+      if (mounted) {
+        // Navigate to Supabase login (default)
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SupabaseLoginPage()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      // Handle sign out error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sign out failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -748,8 +829,8 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Icon(Icons.person_rounded, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 12),
-          const Expanded(
-            child: Text('Profile', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+          Expanded(
+            child: Text(AppLocalizations.of(context).profileSettings, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
           ),
           IconButton(
             icon: Icon(Icons.logout_rounded, color: Colors.red.shade600),
